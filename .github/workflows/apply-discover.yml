@@ -10,11 +10,12 @@ permissions:
 
 jobs:
   apply:
-    # Only run on /apply comments on discover PRs
+    # Only run on /apply comments on discover PRs from users with write access
     if: |
       github.event.issue.pull_request
       && contains(github.event.issue.title, '[discover]')
       && github.event.comment.body == '/apply'
+      && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -105,7 +106,7 @@ jobs:
           git commit -m "$(printf '[discover] apply %d checked project(s)\n\n%s\n' "$APPLY_COUNT" "$BODY")"
           git push
 
-      - name: Mark PR ready for review
+      - name: Merge PR
         if: steps.checked.outputs.count != '0'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -113,7 +114,7 @@ jobs:
           PR_NUM=${{ steps.pr.outputs.number }}
           APPLY_COUNT=$(jq length /tmp/apply.json)
           gh pr ready "$PR_NUM"
-          gh pr comment "$PR_NUM" --body "Applied $APPLY_COUNT checked entries to the README. PR is ready to merge."
+          gh pr merge "$PR_NUM" --squash --body "Applied $APPLY_COUNT checked entries from weekly discovery."
 
       - name: Comment if nothing checked
         if: steps.checked.outputs.count == '0'
