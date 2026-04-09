@@ -311,13 +311,7 @@ gh api repos/vercel-labs/just-bash/readme --jq '.content' 2>/dev/null \
   printf ']},'
   printf '"relevant":{"type":"boolean"},'
   printf '"confidence":{"type":"number"},'
-  # Build category enum dynamically from the README's ## headings
-  # (excludes Contents, Contributing, License — those aren't project categories)
-  CATEGORIES=$(grep -E '^## ' "$README" \
-    | sed 's/^## //' \
-    | grep -viE '^(contents|contributing|license)$' \
-    | jq -R . | jq -s '. + ["Skip"]' | jq -c .)
-  printf '"category":{"type":"string","enum":%s},' "$CATEGORIES"
+  printf '"category":{"type":"string"},'
   printf '"description":{"type":"string"},'
   printf '"reasoning":{"type":"string"}'
   printf '},"required":["repo","checks","relevant","confidence","category","description","reasoning"]}}},'

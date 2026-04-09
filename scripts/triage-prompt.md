@@ -8,13 +8,9 @@ just-bash is a TypeScript library from Vercel Labs (canonical repo: `vercel-labs
 
 ## Categories
 
-- **Official** — Vercel Labs repos or official homepage
-- **Ports** — reimplementations in other languages (Python, Rust, Swift, etc.)
-- **Filesystem Adapters** — pluggable filesystem backends that implement the `IFileSystem` interface (Dropbox, GDrive, Postgres, etc.)
-- **Libraries** — helper packages for building on top of just-bash (CLI frameworks, utilities)
-- **Integrations** — bridges to other ecosystems (MCP servers, agent frameworks, Convex, Turso AgentFS, etc.)
-- **Built With just-bash** — notable projects that depend on just-bash in production
-- **Skip** — not relevant; do not include
+The current README sections are listed below. **Always use an existing category if the project fits.** Only invent a new category as a last resort, when a project genuinely doesn't belong in any existing section. New category names must be short, noun-phrase headings (e.g. "Runtimes", "Testing", "CLI Tools"), matching the style of the existing ones. Use `Skip` to reject.
+
+The exact category names from the current README will be provided to you below — use those names verbatim (case-sensitive) when they fit.
 
 ## Your task
 
