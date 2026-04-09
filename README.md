@@ -28,7 +28,7 @@ Reimplementations of just-bash in other languages.
 - [just-bash (Rust)](https://github.com/arthur-zhang/just-bash) — Rust port. ![](https://img.shields.io/github/stars/arthur-zhang/just-bash?style=flat-square&label=%20&color=gray)
 - [just-bash-rs](https://github.com/nate-trojian/just-bash-rs) — Second Rust port with three filesystem modes (Memory, ReadThrough, Passthrough), 25 built-in commands, and a declarative command extension system. ![](https://img.shields.io/github/stars/nate-trojian/just-bash-rs?style=flat-square&label=%20&color=gray)
 - [just-bash-swift](https://github.com/mweinbach/just-bash-swift) — Pure-Swift port targeting iOS, macOS, and iPadOS where `Process`/`NSTask` are unavailable. In-memory VFS, 40+ commands, recursive-descent parser, ships as a SwiftPM library. ![](https://img.shields.io/github/stars/mweinbach/just-bash-swift?style=flat-square&label=%20&color=gray)
-- [just_bash](https://github.com/elixir-ai-tools/just_bash) — Elixir port with in-memory VFS, HTTPS-only network access with host allowlists, custom command behaviour via `JustBash.Commands.Command`, and a `~b` sigil for one-liner scripting. ![](https://img.shields.io/github/stars/elixir-ai-tools/just_bash?style=flat-square&label=%20&color=gray)
+
 
 ## Filesystem Adapters
 
@@ -39,14 +39,14 @@ just-bash ships with `InMemoryFs`, `OverlayFs`, `ReadWriteFs`, and `MountableFs`
 - [just-bash-openfs](https://github.com/jeffchuber/just-bash-openfs) — OpenFS adapter. ![](https://img.shields.io/github/stars/jeffchuber/just-bash-openfs?style=flat-square&label=%20&color=gray)
 - [bash-gres](https://github.com/marcoripa96/bash-gres) — PostgreSQL-backed `IFileSystem` with workspace isolation via row-level security, BM25 full-text search, and optional pgvector semantic/hybrid search. Works with `postgres.js` or Drizzle. ![](https://img.shields.io/github/stars/marcoripa96/bash-gres?style=flat-square&label=%20&color=gray)
 - [just-bash-postgres](https://github.com/F1nnM/just-bash-postgres) — Second Postgres filesystem provider using ltree hierarchy, full-text search, pgvector semantic/hybrid search, and per-session row-level security. ![](https://img.shields.io/github/stars/F1nnM/just-bash-postgres?style=flat-square&label=%20&color=gray)
-- [durable-bash](https://github.com/StableModels/durable-bash) — Cloudflare Durable Object-backed `IFileSystem` adapter. Persists bash command output in a Durable Object's SQLite storage; 121 tests, full `IFileSystem` interface coverage, ships as `@stablemodels/durable-bash`. ![](https://img.shields.io/github/stars/StableModels/durable-bash?style=flat-square&label=%20&color=gray)
+
 
 ## Libraries
 
 Helper packages for building on top of just-bash.
 
 - [just-bash-util](https://github.com/blindmansion/just-bash-util) — Type-safe CLI command framework for `defineCommand`. Subcommands with option inheritance, auto-generated `--help`, typo suggestions, and a `command()` builder reminiscent of commander/yargs. ![](https://img.shields.io/github/stars/blindmansion/just-bash-util?style=flat-square&label=%20&color=gray)
-- [just-git](https://github.com/blindmansion/just-git) — Pure-TypeScript git implementation with 36 commands that plugs into just-bash as a custom command — pipes, redirects, and `&&` chaining work natively. Also ships a standalone embeddable git server with HTTP/SSH/in-process transport and pluggable storage (SQLite, Postgres, Durable Objects). ![](https://img.shields.io/github/stars/blindmansion/just-git?style=flat-square&label=%20&color=gray)
+
 
 ## Integrations
 
