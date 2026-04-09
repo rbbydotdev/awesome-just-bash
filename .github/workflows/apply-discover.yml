@@ -1,0 +1,123 @@
+name: apply-discover
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  apply:
+    # Only run on /apply comments on discover PRs
+    if: |
+      github.event.issue.pull_request
+      && contains(github.event.issue.title, '[discover]')
+      && github.event.comment.body == '/apply'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Get PR branch
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM=${{ github.event.issue.number }}
+          BRANCH=$(gh api repos/${{ github.repository }}/pulls/$PR_NUM --jq '.head.ref')
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "number=$PR_NUM" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.branch }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Read checked entries from PR body
+        id: checked
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM=${{ steps.pr.outputs.number }}
+
+          # Fetch PR body
+          gh api repos/${{ github.repository }}/pulls/$PR_NUM --jq '.body' > /tmp/pr-body.md
+
+          # Extract checked repos: lines matching "- [x] **[owner/repo]"
+          grep -oE '^\- \[x\] \*\*\[[^]]+\]\(https://github\.com/[^)]+\)' /tmp/pr-body.md \
+            | grep -oE 'github\.com/[^)]+' \
+            | sed 's|github\.com/||' \
+            | sort -u > /tmp/checked-repos.txt
+
+          COUNT=$(wc -l < /tmp/checked-repos.txt | tr -d ' ')
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "Checked repos ($COUNT):"
+          cat /tmp/checked-repos.txt
+
+      - name: Filter candidates to checked only
+        if: steps.checked.outputs.count != '0'
+        run: |
+          if [ ! -f .discover/candidates.json ]; then
+            echo "::error::.discover/candidates.json not found on this branch"
+            exit 1
+          fi
+
+          # Build a jq filter from the checked repos list
+          jq --slurpfile repos <(jq -R . /tmp/checked-repos.txt | jq -s 'map(ascii_downcase)') '
+            map(select((.repo | ascii_downcase) as $r | $repos[0] | index($r) != null))
+          ' .discover/candidates.json > /tmp/apply.json
+
+          APPLY_COUNT=$(jq length /tmp/apply.json)
+          echo "Applying $APPLY_COUNT entries"
+          jq -r '.[] | "  " + .repo + " → " + .category' /tmp/apply.json
+
+      - name: Insert entries into README
+        if: steps.checked.outputs.count != '0'
+        run: |
+          README="readme.md"
+          [ -f README.md ] && README="README.md"
+
+          python3 scripts/insert_entries.py "$README" /tmp/apply.json
+
+      - name: Commit and push
+        if: steps.checked.outputs.count != '0'
+        run: |
+          README="readme.md"
+          [ -f README.md ] && README="README.md"
+
+          if git diff --quiet "$README"; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          APPLY_COUNT=$(jq length /tmp/apply.json)
+          BODY=$(jq -r '.[] | "- " + .repo + " (" + .category + ")"' /tmp/apply.json)
+
+          git add "$README"
+          git commit -m "$(printf '[discover] apply %d checked project(s)\n\n%s\n' "$APPLY_COUNT" "$BODY")"
+          git push
+
+      - name: Mark PR ready for review
+        if: steps.checked.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM=${{ steps.pr.outputs.number }}
+          APPLY_COUNT=$(jq length /tmp/apply.json)
+          gh pr ready "$PR_NUM"
+          gh pr comment "$PR_NUM" --body "Applied $APPLY_COUNT checked entries to the README. PR is ready to merge."
+
+      - name: Comment if nothing checked
+        if: steps.checked.outputs.count == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ steps.pr.outputs.number }} --body "No entries were checked. Check the ones you want to include and comment \`/apply\` again."

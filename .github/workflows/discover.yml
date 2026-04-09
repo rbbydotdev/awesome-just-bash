@@ -1,0 +1,56 @@
+name: discover
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Mondays 09:00 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (skip LLM call and PR)'
+        type: boolean
+        default: false
+      threshold:
+        description: 'Confidence threshold (0.0–1.0)'
+        required: false
+        default: '0.6'
+      model:
+        description: 'OpenRouter model ID'
+        required: false
+        default: 'openrouter/anthropic/claude-sonnet-4.6'
+      max_enrich:
+        description: 'Max candidates to enrich (circuit breaker)'
+        required: false
+        default: '50'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15  # hard wall-clock ceiling
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install llm + llm-openrouter
+        run: pip install --quiet llm llm-openrouter
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Run discovery
+        env:
+          OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONFIDENCE_THRESHOLD: ${{ inputs.threshold || '0.6' }}
+          MODEL: ${{ inputs.model || 'openrouter/anthropic/claude-sonnet-4.6' }}
+          MAX_CANDIDATES_TO_ENRICH: ${{ inputs.max_enrich || '50' }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: bash scripts/discover.sh
