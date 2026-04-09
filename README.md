@@ -53,7 +53,7 @@ Helper packages for building on top of just-bash.
 - [agentfs](https://github.com/tursodatabase/agentfs) — Turso's filesystem-for-agents. Ships an `ai-sdk-just-bash` example showing the two together. ![](https://img.shields.io/github/stars/tursodatabase/agentfs?style=flat-square&label=%20&color=gray)
 - [just-bash-mcp](https://github.com/dalist1/just-bash-mcp) — MCP server exposing a sandboxed just-bash environment to any MCP client. ![](https://img.shields.io/github/stars/dalist1/just-bash-mcp?style=flat-square&label=%20&color=gray)
 - [convex-sandbox](https://github.com/wantpinow/convex-sandbox) — Persistent bash sandboxes backed by Convex file storage. Lazy filesystem hydration, mutation-diffing writeback, and session-persisted `cwd` — no VMs or containers. ![](https://img.shields.io/github/stars/wantpinow/convex-sandbox?style=flat-square&label=%20&color=gray)
-- [context-fs](https://github.com/mwolting/context-fs) — Exposes APIs, databases, and services as virtual filesystems navigable by AI agents via `ls`/`cat`/`find`; ships a `@context-fs/just-bash` package that runs bash scripts against those virtual filesystems. ![](https://img.shields.io/github/stars/mwolting/context-fs?style=flat-square&label=%20&color=gray)
+
 
 ## Built With just-bash
 
