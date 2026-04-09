@@ -37,12 +37,15 @@ def insert_into_section(readme: str, section: str, items: list[dict]) -> str:
     header = re.compile(rf"^## {re.escape(section)}\s*$", re.MULTILINE)
     match = header.search(readme)
     if not match:
-        print(
-            f"warn: section '## {section}' not found in readme; "
-            f"skipping {len(items)} entr{'y' if len(items) == 1 else 'ies'}",
-            file=sys.stderr,
-        )
-        return readme
+        readme = create_section(readme, section)
+        match = header.search(readme)
+        if not match:
+            print(
+                f"warn: failed to create section '## {section}'; "
+                f"skipping {len(items)} entr{'y' if len(items) == 1 else 'ies'}",
+                file=sys.stderr,
+            )
+            return readme
 
     section_start = match.end()
     next_header = re.search(r"^## ", readme[section_start:], re.MULTILINE)
@@ -67,6 +70,44 @@ def insert_into_section(readme: str, section: str, items: list[dict]) -> str:
 
     new_section = "\n".join(lines)
     return readme[:section_start] + new_section + readme[section_end:]
+
+
+def create_section(readme: str, section: str) -> str:
+    """Create a new section before ## Contributing (or at the end)."""
+    print(f"info: creating new section '## {section}'", file=sys.stderr)
+
+    new_section = f"\n## {section}\n\n"
+
+    # Insert before ## Contributing if it exists
+    contrib = re.search(r"^## Contributing\s*$", readme, re.MULTILINE)
+    if contrib:
+        insert_at = contrib.start()
+        readme = readme[:insert_at] + new_section + readme[insert_at:]
+    else:
+        readme = readme.rstrip() + "\n" + new_section
+
+    # Add to TOC if one exists (look for "## Contents" with bullet list)
+    toc_header = re.search(r"^## Contents\s*$", readme, re.MULTILINE)
+    if toc_header:
+        toc_start = toc_header.end()
+        next_h = re.search(r"^## ", readme[toc_start:], re.MULTILINE)
+        toc_end = toc_start + next_h.start() if next_h else len(readme)
+        toc_text = readme[toc_start:toc_end]
+
+        # Find the last TOC bullet before Contributing
+        toc_lines = toc_text.split("\n")
+        insert_idx = len(toc_lines) - 1
+        for i, line in enumerate(toc_lines):
+            if "contributing" in line.lower():
+                insert_idx = i
+                break
+
+        slug = section.lower().replace(" ", "-")
+        toc_entry = f"- [{section}](#{slug})"
+        toc_lines.insert(insert_idx, toc_entry)
+        readme = readme[:toc_start] + "\n".join(toc_lines) + readme[toc_end:]
+
+    return readme
 
 
 def format_entry(item: dict) -> str:
