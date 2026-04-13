@@ -1,0 +1,19 @@
+[
+  {
+    "repo": "guillaumemaka/just-bash-mcp",
+    "checks": {
+      "readme_is_about_project": true,
+      "install_command_matches_name": true,
+      "has_usage_example": true,
+      "describes_unique_value": true,
+      "is_not_copy_of_just_bash": true,
+      "has_real_code": true,
+      "is_just_bash_focused": true
+    },
+    "relevant": true,
+    "confidence": 0.8,
+    "category": "Integrations",
+    "description": "Second MCP server wrapping just-bash with Laminar observability tracing, configurable timeouts, and VS Code MCP integration support",
+    "reasoning": "Clearly a just-bash MCP integration with real implementation details, install instructions, usage examples, and additional features (Laminar tracing, packaging). Similar to the existing just-bash-mcp entry but by a different author with distinct features."
+  }
+]
