@@ -70,6 +70,16 @@ Notable projects that depend on just-bash in the wild.
 
 Contributions welcome. Open a PR adding your project, or an issue with a link and I'll take a look. Please keep entries to one line and lead with what makes the project distinct, not what it generically does.
 
+## Template
+
+This repo is also a template for automating other awesome lists.
+
+- **Quick start** — click "Use this template" on GitHub, open with any agent.
+- **Tutorial** — agent reads `CLAUDE.md` → runs the `.docs/START_HERE.md` wizard.
+- **How-to** — pause: `touch .discover.disabled`. Tune: edit `scripts/checks.md`.
+- **Reference** — all subject values live in `awesome.config.yml` (one file).
+- **Explanation** — 8-stage progressive filter: discovery → enrich → LLM gate → PR checklist.
+
 ## License
 
 [![CC0](https://licensebuttons.net/p/zero/1.0/80x15.png)](https://creativecommons.org/publicdomain/zero/1.0/)
