@@ -1,19 +1,34 @@
 [
   {
-    "repo": "guillaumemaka/just-bash-mcp",
-    "checks": {
-      "readme_is_about_project": true,
-      "install_command_matches_name": true,
-      "has_usage_example": true,
-      "describes_unique_value": true,
-      "is_not_copy_of_just_bash": true,
-      "has_real_code": true,
-      "is_just_bash_focused": true
-    },
+    "repo": "nathan-gage/pydantic-ai-just-bash",
     "relevant": true,
-    "confidence": 0.8,
+    "confidence": 0.85,
+    "category": "Integrations",
+    "description": "PydanticAI capability (`JustBash`) that gives agents a persistent virtual shell, exposing normal Pydantic AI tools as bash commands and supporting deferred tool discovery via `bash_list_tools`/`bash_search_tools`",
+    "reasoning": "Well-documented Python package on PyPI that wraps just-bash-py as a PydanticAI agent capability, with a clear install command, quick-start example, and API overview. Distinct value over existing entries."
+  },
+  {
+    "repo": "vercel-labs/wterm",
+    "relevant": true,
+    "confidence": 0.78,
+    "category": "Integrations",
+    "description": "Web terminal emulator from Vercel Labs with a Zig/WASM VT100 core; ships `@wterm/just-bash` package for an in-browser bash shell powered by just-bash",
+    "reasoning": "From Vercel Labs (the just-bash authors), wterm ships a dedicated `@wterm/just-bash` package that wires just-bash into a full DOM-rendered terminal emulator. Vercel Labs authorship and the dedicated integration package make this notable."
+  },
+  {
+    "repo": "guillaumemaka/just-bash-mcp",
+    "relevant": true,
+    "confidence": 0.75,
     "category": "Integrations",
     "description": "Second MCP server wrapping just-bash with Laminar observability tracing, configurable timeouts, and VS Code MCP integration support",
     "reasoning": "Clearly a just-bash MCP integration with real implementation details, install instructions, usage examples, and additional features (Laminar tracing, packaging). Similar to the existing just-bash-mcp entry but by a different author with distinct features."
+  },
+  {
+    "repo": "dbreunig/dspy-just-bash-interpreter",
+    "relevant": true,
+    "confidence": 0.72,
+    "category": "Integrations",
+    "description": "DSPy RLM wrapper (`BashRLM`) that gives a DSPy agent a persistent bash interpreter via the `just-bash` Python library",
+    "reasoning": "From the author of just-bash-py, this proof-of-concept wraps just-bash as a DSPy RLM code interpreter — a genuine integration with just-bash at its core."
   }
 ]
