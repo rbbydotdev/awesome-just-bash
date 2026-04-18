@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 #
-# Progressive discovery workflow for awesome-just-bash.
+# Progressive discovery workflow for an awesome-list.
+#
+# Subject-specific values (name, canonical repo, search patterns, etc.) are
+# loaded from awesome.config.yml. This script itself is list-agnostic.
 #
 # Flow (each stage strictly reduces the candidate set before the next):
 #   0. Broad discovery   — multiple sources (repo search, code search, npm)
@@ -8,35 +11,22 @@
 #   2. Signal threshold  — must have at least one strong source signal
 #   3. Diff readme       — drop anything already listed
 #   4. Enrichment        — per-repo API calls for survivors only
-#   5. Enriched filters  — README length, dep/import signal
+#   5. Enriched filters  — README length, stub detection
 #   6. LLM checklist     — Sonnet answers yes/no questions from scripts/checks.md
 #   7. Apply check gates — all checks must pass to include
 #   8. Draft PR          — survivors + "considered but skipped" list
 #
 # Required env: OPENROUTER_KEY, GH_TOKEN
-# Optional env:
-#   CONFIDENCE_THRESHOLD       (default 0.6)
-#   MODEL                      (default openrouter/anthropic/claude-sonnet-4.6)
-#   MAX_CANDIDATES_TO_ENRICH   (default 50)   circuit breaker
-#   MAX_PROMPT_BYTES           (default 80000) circuit breaker
-#   MAX_LLM_CALLS              (default 1)    circuit breaker
-#   DRY_RUN                    (default 0)    1 = skip LLM + git + PR
+# Optional env (overrides awesome.config.yml):
+#   CONFIDENCE_THRESHOLD, MODEL, MAX_CANDIDATES_TO_ENRICH, MAX_PROMPT_BYTES,
+#   MAX_LLM_CALLS, DRY_RUN, CONFIG_FILE
 #
 # Kill switch: if .discover.disabled exists in the repo root, the script exits
-# immediately with a loud notice. Use it to pause the scheduled workflow
-# without editing the yaml.
+# immediately with a loud notice.
 
 set -euo pipefail
 
-# ---------------------------------------------------------------------------
-# Config + circuit breakers
-# ---------------------------------------------------------------------------
-THRESHOLD="${CONFIDENCE_THRESHOLD:-0.6}"
-MODEL="${MODEL:-openrouter/anthropic/claude-sonnet-4.6}"
-MAX_CANDIDATES_TO_ENRICH="${MAX_CANDIDATES_TO_ENRICH:-50}"
-MAX_PROMPT_BYTES="${MAX_PROMPT_BYTES:-80000}"
-MAX_LLM_CALLS="${MAX_LLM_CALLS:-1}"
-DRY_RUN="${DRY_RUN:-0}"
+CONFIG_FILE="${CONFIG_FILE:-awesome.config.yml}"
 
 RUN_STAMP="$(date -u +%Y-%m-%d-%H%M)"
 RUN_DATE="${RUN_STAMP%-*}"
@@ -50,6 +40,60 @@ README="readme.md"
 log()  { echo "[discover] $*" >&2; }
 fail() { echo "[discover] ABORT: $*" >&2; exit 1; }
 
+# ---------------------------------------------------------------------------
+# Preflight
+# ---------------------------------------------------------------------------
+if [ -f .discover.disabled ]; then
+  log "Kill switch .discover.disabled is present — aborting cleanly."
+  exit 0
+fi
+
+[ -f "$CONFIG_FILE" ]           || fail "$CONFIG_FILE not found"
+[ -f "$README" ]                || fail "$README not found"
+[ -f scripts/checks.md ]        || fail "scripts/checks.md not found"
+[ -f scripts/triage-prompt.md ] || fail "scripts/triage-prompt.md not found"
+command -v jq >/dev/null        || fail "jq is not installed"
+command -v yq >/dev/null        || fail "yq is not installed"
+command -v gh >/dev/null        || fail "gh CLI is not installed"
+
+DRY_RUN="${DRY_RUN:-0}"
+if [ "$DRY_RUN" != "1" ]; then
+  [ -n "${OPENROUTER_KEY:-}" ] || fail "OPENROUTER_KEY is required (set DRY_RUN=1 to skip the LLM call)"
+  command -v llm >/dev/null    || fail "llm CLI is not installed"
+fi
+[ -n "${GH_TOKEN:-}" ] || fail "GH_TOKEN is required"
+
+# ---------------------------------------------------------------------------
+# Load config
+# ---------------------------------------------------------------------------
+SUBJECT_NAME=$(yq -r '.subject.name' "$CONFIG_FILE")
+CANONICAL_REPO=$(yq -r '.subject.canonical_repo' "$CONFIG_FILE")
+SUBJECT_CREATED_AT=$(yq -r '.subject.created_at' "$CONFIG_FILE")
+SUBJECT_BLURB=$(yq -r '.subject.blurb' "$CONFIG_FILE")
+SUBJECT_HOMEPAGE=$(yq -r '.subject.homepage // ""' "$CONFIG_FILE")
+PACKAGE_NAME=$(yq -r '.subject.package.name // .subject.name' "$CONFIG_FILE")
+PACKAGE_EXISTS=$(yq -r '.subject.package.exists // true' "$CONFIG_FILE")
+
+REPO_QUERY=$(yq -r '.search.repo_query' "$CONFIG_FILE")
+CODE_QUERY_IMPORT=$(yq -r '.search.code_queries[0] // ""' "$CONFIG_FILE")
+CODE_QUERY_PKG=$(yq -r '.search.code_queries[1] // ""' "$CONFIG_FILE")
+NPM_KEYWORD=$(yq -r '.search.npm_keyword' "$CONFIG_FILE")
+NAME_PATTERN=$(yq -r '.search.name_pattern' "$CONFIG_FILE")
+SELF_REFERENCE=$(yq -r '.self_reference' "$CONFIG_FILE")
+
+THRESHOLD="${CONFIDENCE_THRESHOLD:-$(yq -r '.discovery.threshold // 0.6' "$CONFIG_FILE")}"
+MODEL="${MODEL:-$(yq -r '.discovery.model // "openrouter/anthropic/claude-sonnet-4.6"' "$CONFIG_FILE")}"
+MAX_CANDIDATES_TO_ENRICH="${MAX_CANDIDATES_TO_ENRICH:-$(yq -r '.discovery.max_enrich // 50' "$CONFIG_FILE")}"
+MAX_PROMPT_BYTES="${MAX_PROMPT_BYTES:-$(yq -r '.discovery.max_prompt_bytes // 80000' "$CONFIG_FILE")}"
+MAX_LLM_CALLS="${MAX_LLM_CALLS:-1}"
+
+log "subject: $SUBJECT_NAME  canonical: $CANONICAL_REPO  created: $SUBJECT_CREATED_AT"
+log "config: threshold=$THRESHOLD model=$MODEL dry_run=$DRY_RUN"
+log "budget: max_enrich=$MAX_CANDIDATES_TO_ENRICH max_prompt=$MAX_PROMPT_BYTES max_llm_calls=$MAX_LLM_CALLS"
+
+# ---------------------------------------------------------------------------
+# LLM wrapper with call budget + dry-run support
+# ---------------------------------------------------------------------------
 llm_calls=0
 call_llm() {
   llm_calls=$((llm_calls + 1))
@@ -65,33 +109,26 @@ call_llm() {
 }
 
 # ---------------------------------------------------------------------------
-# Preflight
+# Template rendering — substitute {{subject.*}} placeholders in prompt files
 # ---------------------------------------------------------------------------
-if [ -f .discover.disabled ]; then
-  log "Kill switch .discover.disabled is present — aborting cleanly."
-  exit 0
-fi
+render_template() {
+  sed \
+    -e "s|{{subject.name}}|$SUBJECT_NAME|g" \
+    -e "s|{{subject.canonical_repo}}|$CANONICAL_REPO|g" \
+    -e "s|{{subject.blurb}}|$SUBJECT_BLURB|g" \
+    -e "s|{{subject.created_at}}|${SUBJECT_CREATED_AT%T*}|g" \
+    -e "s|{{subject.homepage}}|$SUBJECT_HOMEPAGE|g" \
+    "$1"
+}
 
-[ -f "$README" ]             || fail "$README not found"
-[ -f scripts/checks.md ]     || fail "scripts/checks.md not found"
-[ -f scripts/triage-prompt.md ] || fail "scripts/triage-prompt.md not found"
-command -v jq   >/dev/null   || fail "jq is not installed"
-command -v gh   >/dev/null   || fail "gh CLI is not installed"
-
-if [ "$DRY_RUN" != "1" ]; then
-  [ -n "${OPENROUTER_KEY:-}" ] || fail "OPENROUTER_KEY is required (set DRY_RUN=1 to skip the LLM call)"
-  command -v llm >/dev/null    || fail "llm CLI is not installed"
-fi
-[ -n "${GH_TOKEN:-}" ] || fail "GH_TOKEN is required"
-
-log "config: threshold=$THRESHOLD model=$MODEL dry_run=$DRY_RUN"
-log "budget: max_enrich=$MAX_CANDIDATES_TO_ENRICH max_prompt=$MAX_PROMPT_BYTES max_llm_calls=$MAX_LLM_CALLS"
+render_template scripts/triage-prompt.md > "$WORK/triage-prompt.md"
+render_template scripts/checks.md        > "$WORK/checks.md"
 
 # ---------------------------------------------------------------------------
-# Parse scripts/checks.md -> check names
+# Parse checks -> check names
 # ---------------------------------------------------------------------------
 mapfile -t CHECK_NAMES < <(
-  sed -n '/^## Checks/,$p' scripts/checks.md \
+  sed -n '/^## Checks/,$p' "$WORK/checks.md" \
     | tail -n +2 \
     | grep -oE '^[[:space:]]*-[[:space:]]*\*\*[a-z_][a-z0-9_]*\*\*' \
     | sed -E 's/.*\*\*([a-z_][a-z0-9_]*)\*\*.*/\1/'
@@ -104,17 +141,25 @@ log "loaded ${#CHECK_NAMES[@]} checks: ${CHECK_NAMES[*]}"
 # ---------------------------------------------------------------------------
 log "stage 0: broad discovery"
 
-gh search repos "just-bash in:name" --limit 200 \
+gh search repos "$REPO_QUERY" --limit 200 \
   --json name,description,stargazersCount,url,createdAt,updatedAt,isFork,isArchived,owner \
   > "$WORK/src-reposearch.json" || echo "[]" > "$WORK/src-reposearch.json"
 
-gh search code 'from "just-bash"' --limit 100 --json repository \
-  > "$WORK/src-codeimport.json" 2>/dev/null || echo "[]" > "$WORK/src-codeimport.json"
+if [ -n "$CODE_QUERY_IMPORT" ]; then
+  gh search code "$CODE_QUERY_IMPORT" --limit 100 --json repository \
+    > "$WORK/src-codeimport.json" 2>/dev/null || echo "[]" > "$WORK/src-codeimport.json"
+else
+  echo "[]" > "$WORK/src-codeimport.json"
+fi
 
-gh search code '"just-bash":' --extension json --limit 100 --json repository \
-  > "$WORK/src-codepkg.json" 2>/dev/null || echo "[]" > "$WORK/src-codepkg.json"
+if [ -n "$CODE_QUERY_PKG" ]; then
+  gh search code "$CODE_QUERY_PKG" --extension json --limit 100 --json repository \
+    > "$WORK/src-codepkg.json" 2>/dev/null || echo "[]" > "$WORK/src-codepkg.json"
+else
+  echo "[]" > "$WORK/src-codepkg.json"
+fi
 
-curl -fsS "https://registry.npmjs.org/-/v1/search?text=just-bash&size=250" \
+curl -fsS "https://registry.npmjs.org/-/v1/search?text=$NPM_KEYWORD&size=250" \
   > "$WORK/src-npm.json" 2>/dev/null || echo '{"objects":[]}' > "$WORK/src-npm.json"
 
 # Normalize each source to a common shape and tag with its origin
@@ -136,13 +181,13 @@ jq '[.[] | .repository | {
   sources: ["code-pkg"]
 }]' "$WORK/src-codepkg.json" > "$WORK/n-codepkg.json"
 
-# npm: only keep packages whose description/keywords actually mention just-bash
-jq '[
+# npm: only keep packages whose description/keywords actually mention the subject
+jq --arg needle "$SUBJECT_NAME" '[
   .objects[].package
   | select((.links.repository // "") | test("github.com"))
   | select(
-      ((.description // "") | test("just-bash"; "i"))
-      or ((.keywords // []) | any(. | test("just-bash"; "i")))
+      ((.description // "") | test($needle; "i"))
+      or ((.keywords // []) | any(. | test($needle; "i")))
     )
   | (.links.repository | sub("\\.git$"; "")) as $url
   | ($url | capture("github.com/(?<o>[^/]+)/(?<n>[^/?#]+)")) as $p
@@ -165,11 +210,11 @@ log "stage 0: $(jq length "$WORK/s0.json") candidates"
 # Stage 1: Cheap metadata filters
 # ---------------------------------------------------------------------------
 log "stage 1: date / fork / archived / self-reference"
-jq '[.[] | select(
-  ((.createdAt // null) == null or (.createdAt >= "2025-12-23T00:00:00Z"))
+jq --arg cutoff "$SUBJECT_CREATED_AT" --arg self "$SELF_REFERENCE" '[.[] | select(
+  ((.createdAt // null) == null or (.createdAt >= $cutoff))
   and ((.isFork // false) == false)
   and ((.isArchived // false) == false)
-  and ((.owner.login + "/" + .name) | ascii_downcase) != "rbbydotdev/awesome-just-bash"
+  and (((.owner.login + "/" + .name) | ascii_downcase) != ($self | ascii_downcase))
 )]' "$WORK/s0.json" > "$WORK/s1.json"
 log "stage 1: $(jq length "$WORK/s1.json") candidates"
 
@@ -177,8 +222,8 @@ log "stage 1: $(jq length "$WORK/s1.json") candidates"
 # Stage 2: Signal threshold — must have at least one strong source signal
 # ---------------------------------------------------------------------------
 log "stage 2: strong-signal gate"
-jq '[.[] | select(
-  (.name | ascii_downcase | test("just[-_]?bash"))
+jq --arg pattern "$NAME_PATTERN" '[.[] | select(
+  (.name | ascii_downcase | test($pattern))
   or (.sources | any(. == "code-pkg" or . == "code-import" or . == "npm"))
 )]' "$WORK/s1.json" > "$WORK/s2.json"
 log "stage 2: $(jq length "$WORK/s2.json") candidates"
@@ -226,13 +271,19 @@ jq -r '.[] | .owner.login + "/" + .name' "$WORK/s3.json" | while IFS= read -r re
   meta=$(gh api "repos/$repo" 2>/dev/null || echo "")
   [ -z "$meta" ] && { log "    (api empty, skipping)"; continue; }
 
-  pkg=$(gh api "repos/$repo/contents/package.json" --jq '.content' 2>/dev/null | base64 -d 2>/dev/null || echo "{}")
-  has_dep=$(echo "$pkg" | jq -r '((.dependencies // {}) + (.devDependencies // {}) + (.peerDependencies // {})) | has("just-bash")' 2>/dev/null || echo "false")
+  has_dep="false"
+  if [ "$PACKAGE_EXISTS" = "true" ]; then
+    pkg=$(gh api "repos/$repo/contents/package.json" --jq '.content' 2>/dev/null | base64 -d 2>/dev/null || echo "{}")
+    has_dep=$(echo "$pkg" | jq -r --arg p "$PACKAGE_NAME" '((.dependencies // {}) + (.devDependencies // {}) + (.peerDependencies // {})) | has($p)' 2>/dev/null || echo "false")
+  fi
 
   readme_text=$(gh api "repos/$repo/readme" --jq '.content' 2>/dev/null | base64 -d 2>/dev/null | head -c 4096 || echo "")
   imports="false"
-  if echo "$readme_text" | grep -qE 'from[[:space:]]+"just-bash"|require\("just-bash"\)'; then
-    imports="true"
+  if [ "$PACKAGE_EXISTS" = "true" ]; then
+    IMPORT_REGEX="from[[:space:]]+[\"']$PACKAGE_NAME[\"']|require\([\"']$PACKAGE_NAME[\"']\)"
+    if echo "$readme_text" | grep -qE "$IMPORT_REGEX"; then
+      imports="true"
+    fi
   fi
 
   jq -n \
@@ -253,8 +304,8 @@ jq -r '.[] | .owner.login + "/" + .name' "$WORK/s3.json" | while IFS= read -r re
       owner: $meta.owner.login,
       license: ($meta.license.spdx_id // null),
       homepage: $meta.homepage,
-      has_just_bash_dep: $has_dep,
-      readme_imports_just_bash: $imports,
+      has_package_dep: $has_dep,
+      readme_imports_package: $imports,
       readme_excerpt: $readme_excerpt
     }' > "$WORK/entry.json"
 
@@ -266,8 +317,8 @@ done
 # Stage 5: Enriched filters — catch stubs and empties before paying for LLM
 # ---------------------------------------------------------------------------
 log "stage 5: enriched filters (stub/empty detection)"
-jq '[.[] | select(
-  (.created_at >= "2025-12-23T00:00:00Z")
+jq --arg cutoff "$SUBJECT_CREATED_AT" '[.[] | select(
+  (.created_at >= $cutoff)
   and (.is_archived == false)
   and (.is_fork == false)
   and ((.readme_excerpt | length) >= 200)
@@ -285,8 +336,8 @@ fi
 # ---------------------------------------------------------------------------
 log "stage 6: LLM checklist triage"
 
-# Fetch canonical just-bash README for copy detection
-gh api repos/vercel-labs/just-bash/readme --jq '.content' 2>/dev/null \
+# Fetch canonical README for copy detection
+gh api "repos/$CANONICAL_REPO/readme" --jq '.content' 2>/dev/null \
   | base64 -d 2>/dev/null \
   | head -c 3500 > "$WORK/canonical.txt" || echo "" > "$WORK/canonical.txt"
 
@@ -319,19 +370,17 @@ gh api repos/vercel-labs/just-bash/readme --jq '.content' 2>/dev/null \
 } > "$WORK/schema.json"
 jq empty "$WORK/schema.json" || fail "generated schema is not valid JSON"
 
-# Build the prompt
+# Build the prompt from the rendered templates
 {
-  cat scripts/triage-prompt.md
+  cat "$WORK/triage-prompt.md"
   echo
   echo "## Verification checklist"
   echo
   echo "Answer each of the following yes/no questions for every candidate. These are hard gates — a candidate that fails any check is rejected regardless of your overall confidence score."
   echo
-  cat scripts/checks.md \
-    | sed -n '/^## Checks/,$p' \
-    | tail -n +2
+  sed -n '/^## Checks/,$p' "$WORK/checks.md" | tail -n +2
   echo
-  echo "## Canonical just-bash README (for copy detection)"
+  echo "## Canonical $SUBJECT_NAME README (for copy detection)"
   echo
   echo '```'
   cat "$WORK/canonical.txt"
@@ -375,7 +424,6 @@ log "usage: $LLM_USAGE"
 # ---------------------------------------------------------------------------
 log "stage 7: applying check gates + confidence ≥ $THRESHOLD"
 
-# Build a jq select expression: all checks must be true
 CHECK_FILTER=""
 for name in "${CHECK_NAMES[@]}"; do
   CHECK_FILTER+=" and .checks.$name"
@@ -419,7 +467,6 @@ trap 'restore_branch; rm -rf "$WORK"' EXIT
 
 git checkout -b "$BRANCH"
 
-# Commit candidates.json to the branch (source of truth for /apply)
 mkdir -p .discover
 cp "$WORK/keep.json" .discover/candidates.json
 cp "$WORK/triage.json" .discover/triage.json
@@ -427,7 +474,6 @@ git add .discover/
 git commit -m "[discover] $KEEP_COUNT candidates for review — $RUN_DATE"
 git push -u origin "$BRANCH"
 
-# Build PR body with checkboxes
 {
   echo "Weekly discovery found **$KEEP_COUNT** candidates that passed all checks."
   echo "Review each one, check the entries you want to include, then comment \`/apply\`."
@@ -467,7 +513,7 @@ git push -u origin "$BRANCH"
 
 gh pr create \
   --draft \
-  --title "[discover] $KEEP_COUNT new just-bash project(s) — $RUN_DATE" \
+  --title "[discover] $KEEP_COUNT new $SUBJECT_NAME project(s) — $RUN_DATE" \
   --body-file "$WORK/pr-body.md"
 
 log "done."

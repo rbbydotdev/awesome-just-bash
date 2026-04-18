@@ -1,0 +1,59 @@
+# awesome-list automation config.
+# Single source of truth for everything subject-specific.
+# When using this repo as a template, this is the one file to edit.
+
+subject:
+  # Short name of the thing the list is about. Used in search queries, prompts,
+  # and the list title. Keep it matching what people call the project.
+  name: just-bash
+
+  # The authoritative GitHub repo, owner/name format.
+  canonical_repo: vercel-labs/just-bash
+
+  # ISO timestamp of when the canonical repo was created. Used as a hard filter
+  # to reject older name-collision repos during discovery.
+  # Find with: gh repo view <canonical-repo> --json createdAt --jq .createdAt
+  created_at: "2025-12-23T00:00:00Z"
+
+  # One sentence. Shown in the readme header and the LLM prompt.
+  blurb: "a virtual bash environment with an in-memory filesystem, designed for AI agents"
+
+  # Optional homepage URL.
+  homepage: https://justbash.dev
+
+  # The installable package info, if the subject is on npm / PyPI.
+  # If there's no published package, set `exists: false` and most search queries
+  # that rely on package.json won't run.
+  package:
+    name: just-bash
+    exists: true
+
+# Where this awesome-list repo itself lives (owner/repo). Used as a
+# self-reference filter so the list doesn't discover itself.
+self_reference: rbbydotdev/awesome-just-bash
+
+# Queries and patterns the discovery pipeline uses.
+search:
+  # `gh search repos` query string. The `in:name` qualifier is usually right.
+  repo_query: "just-bash in:name"
+
+  # `gh search code` queries. First is for TS/JS imports, second for
+  # package.json dep references. Leave empty if not applicable.
+  code_queries:
+    - 'from "just-bash"'
+    - '"just-bash":'
+
+  # `https://registry.npmjs.org/-/v1/search?text=<keyword>` keyword.
+  npm_keyword: just-bash
+
+  # Regex for the name-signal gate (Stage 2). Candidates whose name matches this
+  # OR that came from a strong source (code-pkg / code-import / npm) survive.
+  name_pattern: "just[-_]?bash"
+
+# Pipeline defaults. Every one of these can be overridden per-run via env vars
+# (see discover.sh) or workflow_dispatch inputs.
+discovery:
+  threshold: 0.6
+  max_enrich: 50
+  max_prompt_bytes: 80000
+  model: openrouter/anthropic/claude-sonnet-4.6
