@@ -1,19 +1,36 @@
 [
   {
-    "repo": "guillaumemaka/just-bash-mcp",
+    "repo": "nathan-gage/pydantic-ai-just-bash",
     "checks": {
       "readme_is_about_project": true,
       "install_command_matches_name": true,
       "has_usage_example": true,
       "describes_unique_value": true,
-      "is_not_copy_of_just_bash": true,
+      "is_not_copy_of_canonical": true,
       "has_real_code": true,
-      "is_just_bash_focused": true
+      "is_subject_focused": true
     },
     "relevant": true,
-    "confidence": 0.8,
+    "confidence": 0.88,
     "category": "Integrations",
-    "description": "Second MCP server wrapping just-bash with Laminar observability tracing, configurable timeouts, and VS Code MCP integration support",
-    "reasoning": "Clearly a just-bash MCP integration with real implementation details, install instructions, usage examples, and additional features (Laminar tracing, packaging). Similar to the existing just-bash-mcp entry but by a different author with distinct features."
+    "description": "PydanticAI capability that gives an agent a persistent just-bash shell, exposes wrapped Python tools as shell commands, and supports deferred tool discovery",
+    "reasoning": "Has a clear install command (`pip install pydantic-ai-just-bash`), working usage examples, and a well-defined unique value: bridging PydanticAI's toolset API with just-bash's virtual shell environment."
+  },
+  {
+    "repo": "sumedhkhodke/postgres-vfs",
+    "checks": {
+      "readme_is_about_project": true,
+      "install_command_matches_name": true,
+      "has_usage_example": true,
+      "describes_unique_value": true,
+      "is_not_copy_of_canonical": true,
+      "has_real_code": true,
+      "is_subject_focused": true
+    },
+    "relevant": true,
+    "confidence": 0.93,
+    "category": "Filesystem Adapters",
+    "description": "PostgreSQL-backed IFileSystem with multi-tenant workspace isolation, 70+ Unix commands, full-text and pgvector semantic search, and an interactive web demo at postgres-vfs.com",
+    "reasoning": "Explicitly built on just-bash with a custom IFileSystem compiling filesystem calls to SQL; has npm package, clear install command, rich README with demos, and is squarely a just-bash filesystem adapter."
   }
 ]
