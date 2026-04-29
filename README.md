@@ -41,6 +41,7 @@ just-bash ships with `InMemoryFs`, `OverlayFs`, `ReadWriteFs`, and `MountableFs`
 - [bash-gres](https://github.com/marcoripa96/bash-gres) — PostgreSQL-backed `IFileSystem` with workspace isolation via row-level security, BM25 full-text search, and optional pgvector semantic/hybrid search. Works with `postgres.js` or Drizzle. ![](https://img.shields.io/github/stars/marcoripa96/bash-gres?style=flat-square&label=%20&color=gray)
 - [just-bash-postgres](https://github.com/F1nnM/just-bash-postgres) — Second Postgres filesystem provider using ltree hierarchy, full-text search, pgvector semantic/hybrid search, and per-session row-level security. ![](https://img.shields.io/github/stars/F1nnM/just-bash-postgres?style=flat-square&label=%20&color=gray)
 - [durable-bash](https://github.com/StableModels/durable-bash) — Cloudflare Durable Object-backed `IFileSystem` adapter. Persists bash command output in a Durable Object's SQLite storage; 121 tests, full `IFileSystem` interface coverage, ships as `@stablemodels/durable-bash`. ![](https://img.shields.io/github/stars/StableModels/durable-bash?style=flat-square&label=%20&color=gray)
+- [postgres-vfs](https://github.com/sumedhkhodke/postgres-vfs) — PostgreSQL-backed `IFileSystem` with per-tenant row isolation, full-text search, optional pgvector semantic search, and a built-in Web UI — 70+ Unix commands backed by SQL. ![](https://img.shields.io/github/stars/sumedhkhodke/postgres-vfs?style=flat-square&label=%20&color=gray)
 
 
 ## Libraries
@@ -49,6 +50,7 @@ Helper packages for building on top of just-bash.
 
 - [just-bash-util](https://github.com/blindmansion/just-bash-util) — Type-safe CLI command framework for `defineCommand`. Subcommands with option inheritance, auto-generated `--help`, typo suggestions, and a `command()` builder reminiscent of commander/yargs. ![](https://img.shields.io/github/stars/blindmansion/just-bash-util?style=flat-square&label=%20&color=gray)
 - [just-git](https://github.com/blindmansion/just-git) — Pure-TypeScript git implementation with 36 commands that plugs into just-bash as a custom command — pipes, redirects, and `&&` chaining work natively. Also ships a standalone embeddable git server with HTTP/SSH/in-process transport and pluggable storage (SQLite, Postgres, Durable Objects). ![](https://img.shields.io/github/stars/blindmansion/just-git?style=flat-square&label=%20&color=gray)
+- [just-bash-data](https://github.com/MauricioPerera/just-bash-data) — Plugin adding `db` (MongoDB-style document store) and `vec` (vector similarity search) commands to just-bash, with JWT auth, RBAC, and AES-256-GCM encryption. ![](https://img.shields.io/github/stars/MauricioPerera/just-bash-data?style=flat-square&label=%20&color=gray)
 
 
 ## Integrations
@@ -57,6 +59,7 @@ Helper packages for building on top of just-bash.
 - [just-bash-mcp](https://github.com/dalist1/just-bash-mcp) — MCP server exposing a sandboxed just-bash environment to any MCP client. ![](https://img.shields.io/github/stars/dalist1/just-bash-mcp?style=flat-square&label=%20&color=gray)
 - [convex-sandbox](https://github.com/wantpinow/convex-sandbox) — Persistent bash sandboxes backed by Convex file storage. Lazy filesystem hydration, mutation-diffing writeback, and session-persisted `cwd` — no VMs or containers. ![](https://img.shields.io/github/stars/wantpinow/convex-sandbox?style=flat-square&label=%20&color=gray)
 - [just-bash-mcp](https://github.com/guillaumemaka/just-bash-mcp) — Second MCP server wrapping just-bash with Laminar observability tracing, configurable timeouts, and VS Code MCP integration support. ![](https://img.shields.io/github/stars/guillaumemaka/just-bash-mcp?style=flat-square&label=%20&color=gray)
+- [pydantic-ai-just-bash](https://github.com/nathan-gage/pydantic-ai-just-bash) — PydanticAI toolset wrapping just-py-bash as a persistent shell capability, exposing wrapped tools as bash commands with deferred loading and long-lived virtual filesystem. ![](https://img.shields.io/github/stars/nathan-gage/pydantic-ai-just-bash?style=flat-square&label=%20&color=gray)
 
 
 ## Built With just-bash
