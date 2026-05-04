@@ -1,23 +1,6 @@
 [
   {
-    "repo": "MauricioPerera/just-bash-data",
-    "checks": {
-      "readme_is_about_project": true,
-      "install_command_matches_name": true,
-      "has_usage_example": true,
-      "describes_unique_value": true,
-      "is_not_copy_of_canonical": true,
-      "has_real_code": true,
-      "is_subject_focused": true
-    },
-    "relevant": true,
-    "confidence": 0.92,
-    "category": "Libraries",
-    "description": "Plugin adding `db` (MongoDB-style document store) and `vec` (vector similarity search) commands to just-bash, with JWT auth, RBAC, and AES-256-GCM encryption",
-    "reasoning": "All checks pass: has_package_dep and readme_imports_package are both true, the README is detailed and original, and it's clearly a just-bash-focused library adding structured-data commands via custom commands API."
-  },
-  {
-    "repo": "nathan-gage/pydantic-ai-just-bash",
+    "repo": "MauricioPerera/just-bash-ocr",
     "checks": {
       "readme_is_about_project": true,
       "install_command_matches_name": true,
@@ -29,12 +12,12 @@
     },
     "relevant": true,
     "confidence": 0.88,
-    "category": "Integrations",
-    "description": "PydanticAI toolset wrapping just-py-bash as a persistent shell capability, exposing wrapped tools as bash commands with deferred loading and long-lived virtual filesystem",
-    "reasoning": "All checks pass: install command references `pydantic-ai-just-bash`, README has rich usage examples, it's clearly just-bash-focused (via just-py-bash), and the PyPI badge confirms real published code."
+    "category": "Libraries",
+    "description": "OCR plugin adding `ocr extract`, `ocr scan`, and `ocr pdf` commands to just-bash via Tesseract.js — offline, 100+ languages, with bounding-box layout output",
+    "reasoning": "Clearly a just-bash plugin with real code, install command, usage examples, and distinct value (Tesseract.js OCR as custom commands). Passes all hard gates and fits the Libraries category alongside just-bash-data and just-bash-util."
   },
   {
-    "repo": "sumedhkhodke/postgres-vfs",
+    "repo": "MauricioPerera/just-bash-report",
     "checks": {
       "readme_is_about_project": true,
       "install_command_matches_name": true,
@@ -45,9 +28,26 @@
       "is_subject_focused": true
     },
     "relevant": true,
-    "confidence": 0.93,
-    "category": "Filesystem Adapters",
-    "description": "PostgreSQL-backed `IFileSystem` with per-tenant row isolation, full-text search, optional pgvector semantic search, and a built-in Web UI — 70+ Unix commands backed by SQL",
-    "reasoning": "All checks pass: has_package_dep is true, README clearly describes a just-bash IFileSystem adapter with rich original documentation, has a homepage, stars, and CI badge confirming real published code."
+    "confidence": 0.9,
+    "category": "Libraries",
+    "description": "Plugin adding `report` commands to just-bash for generating self-contained HTML dashboards, invoices, and static sites — Chart.js charts, KPI cards, brand theming, i18n, and pure-HTML generators usable without just-bash",
+    "reasoning": "Well-documented just-bash plugin with real install commands, code examples, live demos, and clear distinct value. Passes all hard gates; fits Libraries alongside just-bash-data."
+  },
+  {
+    "repo": "MauricioPerera/just-bash-wiki",
+    "checks": {
+      "readme_is_about_project": true,
+      "install_command_matches_name": true,
+      "has_usage_example": true,
+      "describes_unique_value": true,
+      "is_not_copy_of_canonical": true,
+      "has_real_code": true,
+      "is_subject_focused": true
+    },
+    "relevant": true,
+    "confidence": 0.9,
+    "category": "Libraries",
+    "description": "Plugin implementing Karpathy's LLM Wiki pattern for just-bash — LLM-maintained knowledge base with `wiki` commands, semantic vector search, and source/page/log layers built on just-bash-data",
+    "reasoning": "Clearly a just-bash plugin with real install command, usage examples, distinct value (LLM wiki with semantic search), and passes all hard gates. Fits Libraries category."
   }
 ]
