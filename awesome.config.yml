@@ -56,4 +56,4 @@ discovery:
   threshold: 0.6
   max_enrich: 50
   max_prompt_bytes: 80000
-  model: openrouter/anthropic/claude-sonnet-4.6
+  model: openrouter/deepseek/deepseek-v4-flash

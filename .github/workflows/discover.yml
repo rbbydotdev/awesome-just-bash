@@ -16,7 +16,7 @@ on:
       model:
         description: 'OpenRouter model ID'
         required: false
-        default: 'openrouter/anthropic/claude-sonnet-4.6'
+        default: 'openrouter/deepseek/deepseek-v4-flash'
       max_enrich:
         description: 'Max candidates to enrich (circuit breaker)'
         required: false
@@ -50,7 +50,7 @@ jobs:
           OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIDENCE_THRESHOLD: ${{ inputs.threshold || '0.6' }}
-          MODEL: ${{ inputs.model || 'openrouter/anthropic/claude-sonnet-4.6' }}
+          MODEL: ${{ inputs.model || 'openrouter/deepseek/deepseek-v4-flash' }}
           MAX_CANDIDATES_TO_ENRICH: ${{ inputs.max_enrich || '50' }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
         run: bash scripts/discover.sh

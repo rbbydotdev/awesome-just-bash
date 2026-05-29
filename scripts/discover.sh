@@ -12,7 +12,7 @@
 #   3. Diff readme       — drop anything already listed
 #   4. Enrichment        — per-repo API calls for survivors only
 #   5. Enriched filters  — README length, stub detection
-#   6. LLM checklist     — Sonnet answers yes/no questions from scripts/checks.md
+#   6. LLM checklist     — the LLM answers yes/no questions from scripts/checks.md
 #   7. Apply check gates — all checks must pass to include
 #   8. Draft PR          — survivors + "considered but skipped" list
 #
@@ -82,7 +82,7 @@ NAME_PATTERN=$(yq -r '.search.name_pattern' "$CONFIG_FILE")
 SELF_REFERENCE=$(yq -r '.self_reference' "$CONFIG_FILE")
 
 THRESHOLD="${CONFIDENCE_THRESHOLD:-$(yq -r '.discovery.threshold // 0.6' "$CONFIG_FILE")}"
-MODEL="${MODEL:-$(yq -r '.discovery.model // "openrouter/anthropic/claude-sonnet-4.6"' "$CONFIG_FILE")}"
+MODEL="${MODEL:-$(yq -r '.discovery.model // "openrouter/deepseek/deepseek-v4-flash"' "$CONFIG_FILE")}"
 MAX_CANDIDATES_TO_ENRICH="${MAX_CANDIDATES_TO_ENRICH:-$(yq -r '.discovery.max_enrich // 50' "$CONFIG_FILE")}"
 MAX_PROMPT_BYTES="${MAX_PROMPT_BYTES:-$(yq -r '.discovery.max_prompt_bytes // 80000' "$CONFIG_FILE")}"
 MAX_LLM_CALLS="${MAX_LLM_CALLS:-1}"
