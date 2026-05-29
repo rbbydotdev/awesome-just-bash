@@ -1,0 +1,25 @@
+awesome.config.yml
+  s_8b75ae93d49569::t_c9e622a1d86f69 59
+.github/workflows/discover.yml
+  s_8b75ae93d49569::t_3cdf66b252e399 19
+  s_8b75ae93d49569::t_c8145824ccef4e 53
+scripts/discover.sh
+  s_8b75ae93d49569::t_a2e348dd6180b5 85
+  s_8b75ae93d49569::t_e9222d91153125 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "42d64bdc6f7e53e0e6e525e1ae0c4c741958cf8a",
+  "prompts": {},
+  "sessions": {
+    "s_8b75ae93d49569": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "398ff62a-e041-4aab-9ddd-a8cdb622ed26",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "robby <robby.polana+github@gmail.com>"
+    }
+  }
+}
